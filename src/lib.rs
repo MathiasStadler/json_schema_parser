@@ -202,7 +202,7 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
 fn get_simple_rust_type(json_type_name: &str) -> String { 
     let rust_type_name: &str = match json_type_name {
         "boolean"    => "bool",
-        "number"     => "string",
+        "number"     => "f64",
         "string"     => "String",
         "integer"    => "i32",
         "object"     => "serde_json::Value::Object",
