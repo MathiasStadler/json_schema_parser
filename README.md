@@ -16,7 +16,7 @@ will create a separate Rust struct with the name given under $defs.
 
 e.g.
 ```
-json_schema_here({
+json_schema_here!({
     "title": "Person",
     "type": "object",
     "properties": {
