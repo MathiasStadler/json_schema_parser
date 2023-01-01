@@ -18,7 +18,7 @@ Alternatively, clone this git repository locally, and specify the path in depend
 json_schema_parser = { path = "../json_schema_parser" }
 ```
 
-You will also require "serde" and "serde_json".  
+You will also require "serde" (including the "derive" feature) and "serde_json".  
 
 The macro "json_schema_here" allows the inclusion of JSON Schema directly within the Rust source code file,
 while the macro "json_schema_file" specified that the JSON Schema document is in a file at the location specified.
