@@ -7,7 +7,7 @@ use serde_json::{Result, Value, Map};
 use std::fs;
 use std::collections::HashMap;
 
-/// include JSONSchema directly in the Rust code
+/// include JSON Schema directly in the Rust code
 /// 
 /// json_schema_here({ ...schema... });
 /// 
@@ -19,11 +19,11 @@ pub fn json_schema_here(schema_body: TokenStream) -> TokenStream {
     let ts  = TokenStream::from_str(&struct_text.unwrap());
     match ts {
         Ok(rslt)      => return rslt,
-        Err(err_msg)     => panic!("Could not parse error {} from JSONSchema {}\n", err_msg, schema_text)
+        Err(err_msg)     => panic!("Could not parse error {} from JSON Schema {}\n", err_msg, schema_text)
     }
 }
 
-/// include JSONSchema from a file
+/// include JSON Schema from a file
 /// supports custom types 
 /// 
 /// json_schema_file("<filename>", "<custom_type1>", "<custom_type2>", etc);
@@ -48,7 +48,7 @@ pub fn json_schema_file(parameters: TokenStream) -> TokenStream {
         } else {
             let custom_type_parts: Vec<&str> = param.split("=").collect();
             if custom_type_parts.len() != 2 {
-                panic!("Could not parse JSONSchema Invalid overrides: {}\n", param);
+                panic!("Could not parse JSON Schema Invalid overrides: {}\n", param);
             }
             custom_type_map.insert(custom_type_parts[0].to_string(), custom_type_parts[1].to_string());
         }
@@ -58,22 +58,22 @@ pub fn json_schema_file(parameters: TokenStream) -> TokenStream {
     let ts  = TokenStream::from_str(&struct_text);
     match ts {
         Ok(rslt)      => return rslt,
-        Err(err_msg)     => panic!("Could not parse error {} from JSONSchema in {}\n", err_msg, file_path)
+        Err(err_msg)     => panic!("Could not parse error {} from JSON Schema in {}\n", err_msg, file_path)
     }
 }    
 
 /// implementation of json_schema_file macro code
 fn json_schema_file_impl(file_path: String, custom_type_map: &HashMap<String, String>) -> String {
     let schema_text: String = fs::read_to_string(&file_path)
-        .expect(format!("Could not read JSONSchema file: {}\n", &file_path).as_str());
+        .expect(format!("Could not read JSON Schema file: {}\n", &file_path).as_str());
     let struct_text = json_schema_to_struct(&schema_text, custom_type_map);
     match struct_text {
         Ok(rslt)      => return rslt,
-        Err(err_msg)   => panic!("Could not parse error {} from JSONSchema {}\n", err_msg, schema_text)
+        Err(err_msg)   => panic!("Could not parse error {} from JSON Schema {}\n", err_msg, schema_text)
     }
 }
 
-/// convert JSONSchema in a string slice to a Rust struct
+/// convert JSON Schema in a string slice to a Rust struct
 fn json_schema_to_struct(schema_text: &str, custom_type_map: &HashMap<String, String>) -> Result<String> {
     let schema_json_maybe: Result<Value> = serde_json::from_str(schema_text);
     let schema_json_value: Value = match schema_json_maybe {
@@ -82,18 +82,18 @@ fn json_schema_to_struct(schema_text: &str, custom_type_map: &HashMap<String, St
     };
     let schema_json_map: Map<String, Value> = match schema_json_value {
         Value::Object(obj)  => obj,
-        _                   => panic!("Could not parse JSONSchema not JSON Object\n")
+        _                   => panic!("Could not parse JSON Schema not JSON Object\n")
     };
     json_schema_map_to_struct(&schema_json_map, custom_type_map)
 }
 
-/// convert JSONSchema in a serde JSON map to a Rust struct
+/// convert JSON Schema in a serde JSON map to a Rust struct
 fn json_schema_map_to_struct(schema_json_map: &Map<String, Value>, custom_type_map: &HashMap<String, String>) -> Result<String> {
     if schema_json_map.contains_key("title") == false || schema_json_map["title"].as_str() == None {
-        panic!("Could not parse JSONSchema, no title\n");
+        panic!("Could not parse JSON Schema, no title\n");
     }
     if schema_json_map.contains_key("properties") == false {
-        panic!("Could not parse JSONSchema, no properties\n");
+        panic!("Could not parse JSON Schema, no properties\n");
     }
     let title: String = capitalise(schema_json_map["title"].as_str().unwrap());
     let mut rslt: String = format!("#[derive(Clone, Serialize, Deserialize)]\r\nstruct {} {{\n", title);
@@ -127,16 +127,16 @@ fn process_defs(defs_value: &Value, custom_type_map: &HashMap<String, String>) -
                 if let Ok(this_ok) = this_def {
                     rslt = format!("{}\n\n{}", rslt, this_ok);
                 } else {
-                    panic!("Could not parse JSONSchema, invalid $def {}\n", key_name);
+                    panic!("Could not parse JSON Schema, invalid $def {}\n", key_name);
                 }
             } else {
-                panic!("Could not parse JSONSchema, invalid $def {}\n", key_name);
+                panic!("Could not parse JSON Schema, invalid $def {}\n", key_name);
             }
 
         }
         return rslt;
     }
-    panic!("Could not parse JSONSchema, invalid $defs");
+    panic!("Could not parse JSON Schema, invalid $defs");
 }
 
 /// convert a property to a Rust field declaration
@@ -147,14 +147,14 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
     }
     if let Value::Object(defn_map) = defn_value {
         if defn_map.contains_key("type") == false {
-            panic!("Could not parse JSONSchema, no type for {}\n", key_name);
+            panic!("Could not parse JSON Schema, no type for {}\n", key_name);
         }
         let json_type_name = defn_map["type"].as_str().unwrap();
         let rust_type_name: String = match json_type_name {
             "array"      => {
                                let item_type_name: String = if let Value::Object(item_type_map) = &defn_map["items"] {
                                    if ! item_type_map.contains_key("type") && ! item_type_map.contains_key("$ref") {
-                                       panic!("Could not parse JSONSchema, invalid array item type for {}\n", key_name);
+                                       panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name);
                                    } 
                                    if item_type_map.contains_key("type") {
                                        // type
@@ -162,7 +162,7 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
                                            let item_type_string = get_simple_rust_type(&item_type);
                                            item_type_string
                                        } else {
-                                           panic!("Could not parse JSONSchema, invalid array item type for {}\n", key_name);   
+                                           panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name);   
                                        }    
                                    } else {
                                        // $ref
@@ -171,14 +171,14 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
                                                let referenced_type = capitalise(&ref_name[8..]);
                                                referenced_type
                                            } else {
-                                               panic!("Could not parse JSONSchema, unknown type {}\n", json_type_name);
+                                               panic!("Could not parse JSON Schema, unknown type {}\n", json_type_name);
                                            }
                                        } else {
-                                          panic!("Could not parse JSONSchema, invalid array item type for {}\n", key_name); 
+                                          panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name); 
                                        }
                                    }
                                } else {
-                                   panic!("Could not parse JSONSchema, no array item type for {}\n", key_name);
+                                   panic!("Could not parse JSON Schema, no array item type for {}\n", key_name);
                                };
                                let full_name: String = format!("Vec<{}>", item_type_name);
                                full_name
@@ -194,11 +194,11 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
             return format!("    #[serde(default)]\n    {}: {},\n", key_name, rust_type_name);
         }
     } else {
-        panic!("Could not parse JSONSchema, bad defintion for {}\n", key_name);
+        panic!("Could not parse JSON Schema, bad defintion for {}\n", key_name);
     }   
 } 
 
-/// convert JSONSchema types to Rust equivalents
+/// convert JSON Schema types to Rust equivalents
 fn get_simple_rust_type(json_type_name: &str) -> String { 
     let rust_type_name: &str = match json_type_name {
         "boolean"    => "bool",
@@ -206,7 +206,7 @@ fn get_simple_rust_type(json_type_name: &str) -> String {
         "string"     => "String",
         "integer"    => "i32",
         "object"     => "serde_json::Value::Object",
-        _            => panic!("Could not parse JSONSchema, unknown type {}\n", json_type_name)
+        _            => panic!("Could not parse JSON Schema, unknown type {}\n", json_type_name)
     };
     return rust_type_name.to_string();
 }
