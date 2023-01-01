@@ -96,7 +96,7 @@ fn json_schema_map_to_struct(schema_json_map: &Map<String, Value>, custom_type_m
         panic!("Could not parse JSON Schema, no properties\n");
     }
     let title: String = capitalise(schema_json_map["title"].as_str().unwrap());
-    let mut rslt: String = format!("#[derive(Clone, Serialize, Deserialize)]\r\nstruct {} {{\n", title);
+    let mut rslt: String = format!("#[derive(Clone, Serialize, Deserialize)]\r\npub struct {} {{\n", title);
     let props_value: Value = schema_json_map["properties"].clone();
     if let Value::Object(props_map) = props_value {
         for props_map_item in props_map.iter() {
@@ -143,7 +143,7 @@ fn process_defs(defs_value: &Value, custom_type_map: &HashMap<String, String>) -
 fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<String, String>) -> String {
     if custom_type_map.contains_key(key_name) {
         let rust_type_name: String = custom_type_map.get(key_name).unwrap().to_string();
-        return format!("    #[serde(default)]\n    {}: {},\n", key_name, rust_type_name);
+        return format!("    #[serde(default)]\n    pub {}: {},\n", key_name, rust_type_name);
     }
     if let Value::Object(defn_map) = defn_value {
         if defn_map.contains_key("type") == false {
@@ -188,11 +188,7 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_type_map: &HashMap<
                                 full_name
                             }     
         };
-        if defn_map.contains_key("required") {
-            return format!("    {}: {},\n", key_name, rust_type_name);
-        } else {
-            return format!("    #[serde(default)]\n    {}: {},\n", key_name, rust_type_name);
-        }
+        return format!("    #[serde(default)]\n    pub {}: {},\n", key_name, rust_type_name);
     } else {
         panic!("Could not parse JSON Schema, bad defintion for {}\n", key_name);
     }   
