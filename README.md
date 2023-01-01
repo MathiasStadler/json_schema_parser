@@ -15,7 +15,7 @@ JSON objects that exist under the main object (e.g. where there is an array of o
 will create a separate Rust struct with the name given under $defs.
 
 e.g.
-
+```
 json_schema_here({
     "title": "Person",
     "type": "object",
@@ -28,17 +28,20 @@ json_schema_here({
       }
     }  
 });
-
+```
 will create a struct named "Person" with string fields "firstName" and "lastName". 
 
-
+```
 json_schema_file!("src/example.json");
-
+```
 will read the JSONSchema from the file src/example.json.  This path is relative to the location of the Cargo.toml file.
+
+
 It is possible to also specify custom maps to override the Rust type given to fields, 
 
 e.g.
-
+```
 json_schema_file!("src/example.json", "amount=i64");
+```
 
 will override the field named "amount" to be an i64 instead of whatever type would otherwise be assigned.
