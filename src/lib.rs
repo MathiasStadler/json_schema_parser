@@ -1,6 +1,7 @@
 /// Copyright (c) 2023  Ward van der Veer
 
 extern crate proc_macro;
+extern crate serde_json;
 use proc_macro::TokenStream;
 use std::str::FromStr;
 use serde_json::{Result, Value, Map};
