@@ -24,8 +24,8 @@ The macro "json_schema_here" allows the inclusion of JSON Schema directly within
 while the macro "json_schema_file" specified that the JSON Schema document is in a file at the location specified.
 
 It is required that the JSON Schema have a "title" specified, this value will be used as the Rust name of the struct.
-However, if json_schema_file is used, a mssing title can be supplied by using a custom name instead of blank, e.g.
-"->My_Struct_Name" will name the struct My_Struct_Name where "title" is missing.
+However, if json_schema_file is used, a missing title can be supplied by using a custom name instead of blank,
+e.g. "->My_Struct_Name" will name the struct My_Struct_Name where "title" is missing.
 
 JSON objects that exist under the main object (e.g. where there is an array of objects), should be specified in the 
 "$defs" object.  These should be referenced as { "$ref": "#/$defs/*name*"} in the main object.  Each object under $defs 
