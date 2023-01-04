@@ -9,7 +9,7 @@ To use these macros, include the following line under
 [dependencies] in cargo.toml:
 
 ```
-json_schema_parser = { git = "https://github.com/wvdveer/json_schema_parser" }
+json_schema_parser = { version = "0.2.3", git = "https://github.com/wvdveer/json_schema_parser" }
 ```
 
 Alternatively, clone this git repository locally, and specify the path in dependencies:
@@ -25,6 +25,7 @@ while the macro "json_schema_file" specified that the JSON Schema document is in
 
 It is required that the JSON Schema have a "title" specified, this value will be used as the Rust name of the struct.
 However, if json_schema_file is used, a missing title can be supplied by using a custom name instead of blank,
+
 e.g. "->My_Struct_Name" will name the struct My_Struct_Name where "title" is missing.
 
 JSON objects that exist under the main object (e.g. where there is an array of objects), should be specified in the 
@@ -56,7 +57,7 @@ will read the JSON Schema from the file src/example.json.  This path is relative
 
 It is possible to also specify custom maps to override the names and types that would otherwise be used.
 
-To override the name, use "*field name*->*Rust type*"
+To override the name, use "*JSON name*->*Rust name*"
 
 e.g.
 ```
@@ -79,7 +80,7 @@ You can include as many custom names and types as needed, in any order:
 
 e.g.
 ```
-json_schema_file!("src/example.json", "amount->balance", "amount=i64");
+json_schema_file!("src/example.json", "bank statement->Bank_Statement", "amount=i64");
 ```
 
-will rename the field "amount" to "balance" and change it to the i64 Rust type.
+will apply both of the above changes.
