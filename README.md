@@ -9,7 +9,7 @@ To use these macros, include the following line under
 [dependencies] in cargo.toml:
 
 ```
-json_schema_parser = { version = "0.2.3", git = "https://github.com/wvdveer/json_schema_parser" }
+json_schema_parser = { version = "0.2.4", git = "https://github.com/wvdveer/json_schema_parser" }
 ```
 
 Alternatively, clone this git repository locally, and specify the path in dependencies:
@@ -28,9 +28,10 @@ However, if json_schema_file is used, a missing title can be supplied by using a
 
 e.g. "->My_Struct_Name" will name the struct My_Struct_Name where "title" is missing.
 
-JSON objects that exist under the main object (e.g. where there is an array of objects), should be specified in the 
-"$defs" object.  These should be referenced as { "$ref": "#/$defs/*name*"} in the main object.  Each object under $defs 
-will create a separate Rust struct with the name given under $defs.
+JSON objects that exist under the main object (e.g. where there is an array of objects), will be moved under the 
+"$defs" object in preprocessing.  These can be referenced as { "$ref": "#/$defs/*name*"} in the main object.  Each 
+object under $defs will create a separate Rust struct with the name given under $defs.  It is advisable if the same
+structure appears in multiple places in your schema, that $defs be used explicitly.
 
 e.g.
 ```
@@ -84,3 +85,10 @@ json_schema_file!("src/example.json", "bank statement->Bank_Statement", "amount=
 ```
 
 will apply both of the above changes.
+
+
+Unsupported JSON Schema features:
+
+* required.  All fields are optional and use the Rust default.
+* Using multiple possible types, e.g. [ "string", "number" ]
+  

@@ -29,7 +29,7 @@ pub fn json_schema_here(schema_body: TokenStream) -> TokenStream {
     }
 }
 
-/// include JSON Schema from a file
+/// include JSON Schema from a file,
 /// supports custom names and types 
 /// 
 /// json_schema_file("<filename>", "<custom_type1>", "<custom_name1>", "<custom_name2>", "<custom_type2>", ...);

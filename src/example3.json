@@ -1,0 +1,184 @@
+{
+    "$id": "https://randomuser.me/schema.json",
+    "type": "object",
+    "properties": {
+      "results": {
+        "type": "array",
+        "items": 
+          {
+            "type": "object",
+            "properties": {
+              "gender": {
+                "type": "string"
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "first": {
+                    "type": "string"
+                  },
+                  "last": {
+                    "type": "string"
+                  }
+                }
+              },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "street": {
+                    "type": "object",
+                    "properties": {
+                      "number": {
+                        "type": "integer"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "postcode": {
+                    "type": "string"
+                  },
+                  "coordinates": {
+                    "type": "object",
+                    "properties": {
+                      "latitude": {
+                        "type": "string"
+                      },
+                      "longitude": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "timezone": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "email": {
+                "type": "string"
+              },
+              "login": {
+                "type": "object",
+                "properties": {
+                  "uuid": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "salt": {
+                    "type": "string"
+                  },
+                  "md5": {
+                    "type": "string"
+                  },
+                  "sha1": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string"
+                  }
+                }
+              },
+              "dob": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "age": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "registered": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "age": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "phone": {
+                "type": "string"
+              },
+              "cell": {
+                "type": "string"
+              },
+              "id": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              },
+              "picture": {
+                "type": "object",
+                "properties": {
+                  "large": {
+                    "type": "string"
+                  },
+                  "medium": {
+                    "type": "string"
+                  },
+                  "thumbnail": {
+                    "type": "string"
+                  }
+                }
+              },
+              "nat": {
+                "type": "string"
+              }
+            }
+          }
+      },
+      "info": {
+        "type": "object",
+        "properties": {
+          "seed": {
+            "type": "string"
+          },
+          "results": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      }
+    }
+}

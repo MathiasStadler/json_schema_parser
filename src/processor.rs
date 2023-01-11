@@ -1,3 +1,5 @@
+/// Copyright (c) 2023  Ward van der Veer
+
 extern crate serde_json;
 use std::fs;
 use serde_json::{Result, Value, Map};
@@ -29,20 +31,21 @@ pub fn json_schema_to_struct(schema_text: &str, custom_name_map: &HashMap<String
 }
 
 /// convert JSON Schema in a serde JSON map to a Rust struct
-fn json_schema_map_to_struct(schema_json_map: &Map<String, Value>, custom_name_map: &HashMap<String, String>, custom_type_map: &HashMap<String, String>) -> Result<String> {
-    let title: String = if schema_json_map.contains_key("title") == false || schema_json_map["title"].as_str() == None {
+fn json_schema_map_to_struct(schema_json_map_raw: &Map<String, Value>, custom_name_map: &HashMap<String, String>, custom_type_map: &HashMap<String, String>) -> Result<String> {
+    let title: String = if schema_json_map_raw.contains_key("title") == false || schema_json_map_raw["title"].as_str() == None {
         if custom_name_map.contains_key("") {
             custom_name_map.get("").unwrap().to_string()
         } else {
             panic!("Could not parse JSON Schema, no title\n");
         }
     } else {
-        format_struct_name(schema_json_map["title"].as_str().unwrap(), custom_name_map)
+        format_struct_name(schema_json_map_raw["title"].as_str().unwrap(), custom_name_map)
     };
+    let schema_json_map = process_embedded_objects_into_defs(&title, schema_json_map_raw);
     if schema_json_map.contains_key("properties") == false {
         panic!("Could not parse JSON Schema, no properties\n");
     }
-    let mut rslt: String = format!("#[derive(Clone, Serialize, Deserialize)]\r\npub struct {} {{\n", title);
+    let mut rslt: String = format!("#[derive(Clone, Serialize, Deserialize, Default)]\r\npub struct {} {{\n", title);
     let props_value: Value = schema_json_map["properties"].clone();
     if let Value::Object(props_map) = props_value {
         for props_map_item in props_map.iter() {
@@ -59,7 +62,73 @@ fn json_schema_map_to_struct(schema_json_map: &Map<String, Value>, custom_name_m
     return Ok(rslt);
 }
 
-/// process the &defs field
+/// move embedded objects into the $defs
+fn process_embedded_objects_into_defs(struct_name: &str, schema_json_map: &Map<String, Value>) -> Map<String, Value> {
+    let mut new_defs: HashMap<String, Map<String, Value>> = HashMap::new();
+    let mut revised_schema_json_map: Map<String, Value> = extract_embedded_objects(struct_name, schema_json_map, &mut new_defs, true);
+    if ! new_defs.is_empty() {
+        let mut defs_map: Map<String,Value> = Map::new();
+        if revised_schema_json_map.contains_key("$defs") {
+            if let Value::Object(old_defs_map) = &revised_schema_json_map["$defs"] {
+                for (old_def_name, old_def_obj) in old_defs_map {
+                    defs_map.insert(old_def_name.to_string(), old_def_obj.clone());
+                }
+            }
+        } 
+        for (new_def_name, new_def_obj) in new_defs {
+            defs_map.insert(new_def_name, Value::Object(new_def_obj));
+        }
+        revised_schema_json_map.insert("$defs".to_string(), Value::Object(defs_map));  
+    }
+    return revised_schema_json_map;
+} 
+
+/// extract embedded objects 
+fn extract_embedded_objects(name_to_field: &str, schema_json_map_section: &Map<String, Value>, new_defs: & mut HashMap<String, Map<String, Value>>, is_root: bool) -> Map<String, Value> {
+    if schema_json_map_section.contains_key("type") == false {
+        // may be a $ref
+        return schema_json_map_section.clone();
+    }
+
+    let section_type: &str = schema_json_map_section["type"].as_str().unwrap();
+      
+    if section_type != "object" && section_type != "array" {
+        // nothing to change
+        return schema_json_map_section.clone();
+    }
+    if section_type == "array" {
+        let array_name = format!("{}_item", name_to_field);
+        if let Value::Object(items_type) = &schema_json_map_section["items"] {
+            let mut new_schema_json_map_section = schema_json_map_section.clone();
+            new_schema_json_map_section["items"] = Value::Object(extract_embedded_objects(&array_name, &items_type, new_defs, false));
+            return new_schema_json_map_section;
+        } else {
+            panic!("Can't find item type for {}", array_name);
+        }
+    }
+    let props_value: Value = schema_json_map_section["properties"].clone();
+    let mut new_schema_json_map_section = schema_json_map_section.clone();
+    if let Value::Object(props_map) = props_value {
+        for props_map_item in props_map.iter() {
+            let key_name = props_map_item.0.clone();
+            let defn_value = props_map_item.1.clone();
+            let obj_name = format!("{}_{}", name_to_field, key_name);
+            if let Value::Object(obj_type) = defn_value {
+                new_schema_json_map_section["properties"][&key_name] = Value::Object(extract_embedded_objects(&obj_name, &obj_type, new_defs, false));
+            } else {
+                panic!("Can find item type for {}", obj_name);
+            }
+        }
+    }
+    if !is_root {
+        new_defs.insert(name_to_field.to_string(), new_schema_json_map_section.clone());
+        new_schema_json_map_section = Map::new();
+        new_schema_json_map_section.insert("$ref".to_string(), Value::String(format!("#/$defs/{}", name_to_field)));
+    }
+    return new_schema_json_map_section;
+}
+
+/// process the $defs field
 fn process_defs(defs_value: &Value, custom_name_map: &HashMap<String, String>, custom_type_map: &HashMap<String, String>) -> String {
     let mut rslt: String = "".to_string();
     if let Value::Object(defs_map) = defs_value {
@@ -91,58 +160,50 @@ fn get_field_text(key_name: &str, defn_value: &Value, custom_name_map: &HashMap<
     if custom_name_map.contains_key(key_name) {
         field_name = custom_name_map.get(key_name).unwrap().to_string();
     }
+    let rust_type_name: String;
     if custom_type_map.contains_key(key_name) {
-        let rust_type_name: String = custom_type_map.get(key_name).unwrap().to_string();
-        return format!("    #[serde(default)]\n    pub {}: {},\n", field_name, rust_type_name);
-    }
-    if let Value::Object(defn_map) = defn_value {
-        if defn_map.contains_key("type") == false {
-            panic!("Could not parse JSON Schema, no type for {}\n", key_name);
-        }
-        let json_type_name = defn_map["type"].as_str().unwrap();
-        let rust_type_name: String = match json_type_name {
-            "array"      => {
-                               let item_type_name: String = if let Value::Object(item_type_map) = &defn_map["items"] {
-                                   if ! item_type_map.contains_key("type") && ! item_type_map.contains_key("$ref") {
-                                       panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name);
-                                   } 
-                                   if item_type_map.contains_key("type") {
-                                       // type
-                                       if let Value::String(item_type) = &item_type_map["type"] {
-                                           let item_type_string = get_simple_rust_type(&item_type);
-                                           item_type_string
-                                       } else {
-                                           panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name);   
-                                       }    
-                                   } else {
-                                       // $ref
-                                       if let Value::String(ref_name) = &item_type_map["$ref"] {
-                                           if &ref_name[0..8] == "#/$defs/" {
-                                               let referenced_type = format_struct_name(&ref_name[8..], custom_name_map);
-                                               referenced_type
-                                           } else {
-                                               panic!("Could not parse JSON Schema, unknown type {}\n", json_type_name);
-                                           }
-                                       } else {
-                                          panic!("Could not parse JSON Schema, invalid array item type for {}\n", key_name); 
-                                       }
-                                   }
-                               } else {
-                                   panic!("Could not parse JSON Schema, no array item type for {}\n", key_name);
-                               };
-                               let full_name: String = format!("Vec<{}>", item_type_name);
-                               full_name
-                            },
-            _            => {
-                                let full_name: String = get_simple_rust_type(json_type_name);
-                                full_name
-                            }     
-        };
-        return format!("    #[serde(default)]\n    pub {}: {},\n", field_name, rust_type_name);
+        rust_type_name = custom_type_map.get(key_name).unwrap().to_string();
+    } else if let Value::Object(defn_m) = defn_value {
+        let defn_map: Map<String, Value> = defn_m.clone();
+        rust_type_name = get_field_type(key_name, defn_map, custom_name_map);
     } else {
         panic!("Could not parse JSON Schema, bad defintion for {}\n", key_name);
     }   
+    return format!("    #[serde(default)]\n    pub {}: {},\n", field_name, rust_type_name);
 } 
+
+/// get the rust field type from definition JSON object
+fn get_field_type(key_name: &str, defn_map: Map<String, Value>, custom_name_map: &HashMap<String, String>) -> String {
+    if defn_map.contains_key("type") == false {
+        // $ref
+        if let Value::String(ref_name) = &defn_map["$ref"] {
+            if &ref_name[0..8] == "#/$defs/" {
+                let referenced_type = format_struct_name(&ref_name[8..], custom_name_map);
+                return referenced_type;
+            } else {
+                panic!("Could not parse JSON Schema, unknown $ref for {}\n", key_name);
+            }
+        } else {
+            panic!("Could not parse JSON Schema, no type for {}\n", key_name);
+        }
+    }
+    let json_type_name = defn_map["type"].as_str().unwrap();
+    match json_type_name {
+        "array"      => {
+                            let item_type_name: String = if let Value::Object(item_type_m) = &defn_map["items"] {
+                                let item_type_map: Map<String, Value> = item_type_m.clone();
+                                get_field_type(&format!("{}[]", key_name), item_type_map, custom_name_map)
+                            } else {
+                                panic!("Could not parse JSON Schema, no array item type for {}\n", key_name);
+                            };
+                            return format!("Vec<{}>", item_type_name);
+                        },
+        _            => {
+                            return get_simple_rust_type(json_type_name);
+                        }     
+    };
+}
+
 
 /// convert JSON Schema types to Rust equivalents
 fn get_simple_rust_type(json_type_name: &str) -> String { 
@@ -190,6 +251,32 @@ mod tests {
             .expect("Could not read example file 2\n");
 
         let custom_name_map: HashMap<String, String> = HashMap::new();
+        let custom_type_map: HashMap<String, String> = HashMap::new();
+        let ts = json_schema_to_struct(&contents, &custom_name_map, &custom_type_map);
+        print!("{}\r\n", ts.unwrap());
+    }
+
+    #[test]
+    fn process_example_file3_embedded_objs() {
+        let file_path: String = "src/example3.json".to_string();
+        let contents: String = fs::read_to_string(file_path)
+            .expect("Could not read example file 3\n");
+
+        let raw_json_val: Value = serde_json::from_str(&contents).unwrap();
+        if let Value::Object(raw_json) = raw_json_val {
+            let modified_json = process_embedded_objects_into_defs("People", &raw_json);
+            print!("{}\r\n", serde_json::to_string(&modified_json).unwrap());
+        }
+    }
+
+    #[test]
+    fn process_example_file3() {
+        let file_path: String = "src/example3.json".to_string();
+        let contents: String = fs::read_to_string(file_path)
+            .expect("Could not read example file 3\n");
+
+        let mut custom_name_map: HashMap<String, String> = HashMap::new();
+        custom_name_map.insert("".to_string(), "People".to_string());
         let custom_type_map: HashMap<String, String> = HashMap::new();
         let ts = json_schema_to_struct(&contents, &custom_name_map, &custom_type_map);
         print!("{}\r\n", ts.unwrap());
