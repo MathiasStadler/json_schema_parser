@@ -1,0 +1,11 @@
+--2024-04-07 11:12:37--  https://raw.githubusercontent.com/jupyter/nbformat/main/nbformat/v4/nbformat.v4.schema.json
+Auflösen des Hostnamens raw.githubusercontent.com (raw.githubusercontent.com) … 2606:50c0:8001::154, 2606:50c0:8000::154, 2606:50c0:8003::154, ...
+Verbindungsaufbau zu raw.githubusercontent.com (raw.githubusercontent.com)|2606:50c0:8001::154|:443 … verbunden.
+HTTP-Anforderung gesendet, auf Antwort wird gewartet … 200 OK
+Länge: 16104 (16K) [text/plain]
+Wird in ‘nbformat.v4.schema.json.1’ gespeichert.
+
+     0K .......... .....                                      100% 23,2M=0,001s
+
+2024-04-07 11:12:37 (23,2 MB/s) - ‘nbformat.v4.schema.json.1’ gespeichert [16104/16104]
+

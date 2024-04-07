@@ -1,0 +1,69 @@
+{
+    "$id": "https://example.com/conditional-validation-dependentSchemas.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Conditional Validation with dependentSchemas",
+    "type": "object",
+    "properties": {
+        "metadata": {
+            "description": "Notebook root-level metadata.",
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+                "kernelspec": {
+                    "description": "Kernel information.",
+                    "type": "object",
+                    "required": [
+                        "name",
+                        "display_name"
+                    ],
+                    "properties": {
+                        "name": {
+                            "description": "Name of the kernel specification.",
+                            "type": "string"
+                        },
+                        "display_name": {
+                            "description": "Name to display in UI.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "language_info": {
+                    "description": "Kernel information.",
+                    "type": "object",
+                    "required": [
+                        "name"
+                    ],
+                    "properties": {
+                        "name": {
+                            "description": "The programming language which this kernel runs.",
+                            "type": "string"
+                        },
+                        "codemirror_mode": {
+                            "description": "The codemirror mode to use for code in this language.",
+                            "oneOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "object"
+                                }
+                            ]
+                        },
+                        "file_extension": {
+                            "description": "The file extension for files in this language.",
+                            "type": "string"
+                        },
+                        "mimetype": {
+                            "description": "The mimetype corresponding to files in this language.",
+                            "type": "string"
+                        },
+                        "pygments_lexer": {
+                            "description": "The pygments lexer to use for code in this language.",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
